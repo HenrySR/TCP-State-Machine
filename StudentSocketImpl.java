@@ -5,9 +5,9 @@ import java.util.Timer;
 class StudentSocketImpl extends BaseSocketImpl {
 
   // SocketImpl data members:
-  //   protected InetAddress address;
-  //   protected int port;
-  //   protected int localport;
+    protected InetAddress address;
+    protected int port;
+    protected int localport;
 
   private Demultiplexer D;
   private Timer tcpTimer;
@@ -27,6 +27,11 @@ class StudentSocketImpl extends BaseSocketImpl {
    */
   public synchronized void connect(InetAddress address, int port) throws IOException{
     localport = D.getNextAvailablePort();
+    this.address = address;
+    this.port = port;
+    D.registerConnection(address, localport, port, this);
+    TCPWrapper.setUDPPortNumber(port);
+    TCPWrapper.send(new TCPPacket(localport, port, 1, 0, false, true, false, 100, null), address);
   }
   
   /**
@@ -34,6 +39,7 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @param p The packet that arrived
    */
   public synchronized void receivePacket(TCPPacket p){
+    System.out.println(p);
   }
   
   /** 
