@@ -26,13 +26,13 @@ class StudentSocketImpl extends BaseSocketImpl {
    *               connection.
    */
   public synchronized void connect(InetAddress address, int port) throws IOException{
-    // localport = D.getNextAvailablePort();
+    localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
     System.out.println("register connection, localport = " + localport);
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
-    TCPWrapper.send(new TCPPacket(localport, port, 1, 0, false, true, false, 100, null), address);
+    TCPWrapper.send(new TCPPacket(localport, port, 0, 0, false, true, false, 50, null), address);
   }
   
   /**
