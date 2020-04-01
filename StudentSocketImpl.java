@@ -40,7 +40,7 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @param p The packet that arrived
    */
   public synchronized void receivePacket(TCPPacket p){
-    System.out.println(p);
+    System.out.println("receivePacket called, packet = " + p);
     try{
       D.unregisterListeningSocket(localport, this);
     } catch (IOException e){
