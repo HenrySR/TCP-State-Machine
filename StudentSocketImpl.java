@@ -29,7 +29,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
-    System.out.println("register connection, localport = " + localport);
+    System.out.println("register connection, port = " + this.port);
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
     TCPWrapper.send(new TCPPacket(localport, port, 0, 0, false, true, false, 50, null), address);
