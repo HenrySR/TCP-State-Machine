@@ -30,7 +30,6 @@ class StudentSocketImpl extends BaseSocketImpl {
     this.address = address;
     this.port = port;
     D.registerConnection(address, localport, port, this);
-    D.unregisterListeningSocket(localport, this);
     TCPWrapper.setUDPPortNumber(port);
     TCPWrapper.send(new TCPPacket(localport, port, 1, 0, false, true, false, 100, null), address);
   }
@@ -41,6 +40,11 @@ class StudentSocketImpl extends BaseSocketImpl {
    */
   public synchronized void receivePacket(TCPPacket p){
     System.out.println(p);
+    try{
+      D.unregisterListeningSocket(localport, this);
+    } catch (IOException e){
+      System.out.println(e);
+    }
   }
   
   /** 
