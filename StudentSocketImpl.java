@@ -29,6 +29,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
+    System.out.println("register connection, localport = " + localport);
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
     TCPWrapper.send(new TCPPacket(localport, port, 1, 0, false, true, false, 100, null), address);
@@ -55,6 +56,7 @@ class StudentSocketImpl extends BaseSocketImpl {
    * Note that localport is already set prior to this being called.
    */
   public synchronized void acceptConnection() throws IOException {
+    System.out.println("register listening socket, localport = " + localport);
     D.registerListeningSocket(localport, this);
   }
 
