@@ -11,7 +11,7 @@ public class server1 {
 
     try{
       TCPStart.start();
-      
+      System.out.println(Integer.parseInt(argv[0]));
       ServerSocket sock = new ServerSocket(Integer.parseInt(argv[0]));
       Socket connSock = sock.accept();
 
