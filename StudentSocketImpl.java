@@ -26,7 +26,7 @@ class StudentSocketImpl extends BaseSocketImpl {
    *               connection.
    */
   public synchronized void connect(InetAddress address, int port) throws IOException{
-    localport = D.getNextAvailablePort();
+    // localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
     System.out.println("register connection, localport = " + localport);
