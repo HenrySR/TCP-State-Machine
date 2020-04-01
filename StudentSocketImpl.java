@@ -56,8 +56,8 @@ class StudentSocketImpl extends BaseSocketImpl {
    * Note that localport is already set prior to this being called.
    */
   public synchronized void acceptConnection() throws IOException {
-    System.out.println("register listening socket, localport = " + localport);
     D.registerListeningSocket(localport, this);
+    System.out.println("register listening socket, localport = " + localport);
   }
 
   
