@@ -161,13 +161,13 @@ class Demultiplexer extends Thread {
             // if the listeningSocket was found.
             if (c!=null){
                 // System.out.println("%% listeningSocket found: "+c);
-  	        c.receivePacket(packet);
+  	            c.receivePacket(packet);
             }
-	    else
-	      System.err.println("!!! UNMATCHED PACKET");
+	        else
+	            System.err.println("!!! synflag UNMATCHED PACKET");
         }
 	else
-	  System.err.println("!!! UNMATCHED PACKET");
+	  System.err.println("!!! reg UNMATCHED PACKET");
 
     }
 

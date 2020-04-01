@@ -30,6 +30,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     this.address = address;
     this.port = port;
     D.registerConnection(address, localport, port, this);
+    D.unregisterListeningSocket(localport, this);
     TCPWrapper.setUDPPortNumber(port);
     TCPWrapper.send(new TCPPacket(localport, port, 1, 0, false, true, false, 100, null), address);
   }
