@@ -12,6 +12,7 @@ public class server1 {
     try{
       TCPStart.start();
       ServerSocket sock = new ServerSocket(Integer.parseInt(argv[0]));
+      System.out.println("gonna try the old sock.accept()");
       Socket connSock = sock.accept();
 
       System.out.println("got socket "+connSock);
