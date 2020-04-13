@@ -5,9 +5,9 @@ import java.util.Timer;
 class StudentSocketImpl extends BaseSocketImpl {
 
   // SocketImpl data members:
-    // protected InetAddress address;
-    // protected int port;
-    // protected int localport;
+  // protected InetAddress address;
+  // protected int port;
+  // protected int localport;
 
   private Demultiplexer D;
   private Timer tcpTimer;

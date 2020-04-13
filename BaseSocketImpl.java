@@ -109,7 +109,6 @@ abstract class BaseSocketImpl extends SocketImpl {
    *               connection.
    */
   protected void accept(SocketImpl s) throws IOException {
-    System.out.println("Base Socket Impl's local port = "+((BaseSocketImpl)s).localport);
     ((BaseSocketImpl)s).localport = localport;
     ((BaseSocketImpl)s).acceptConnection();
   }
