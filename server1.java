@@ -11,9 +11,7 @@ public class server1 {
 
     try{
       TCPStart.start();
-      System.out.println("arg 0: " + Integer.parseInt(argv[0]));
       ServerSocket sock = new ServerSocket(Integer.parseInt(argv[0]));
-      System.out.println("port was set to " + sock.getLocalPort());
       Socket connSock = sock.accept();
 
       System.out.println("got socket "+connSock);

@@ -34,6 +34,7 @@ class TCPStart {
         
     // this number will initialize what port # you want your UDP
     // wrapper to run on.
+    System.out.println("port resource = " + System.getProperty(PORTRESOURCE));
     int portForUDP = Integer.parseInt(System.getProperty(PORTRESOURCE));
 
         
