@@ -48,7 +48,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     }
   }
 
-  private void changeState(states newState){
+  private synchronized void changeState(states newState){
     System.out.println("!!! "+ currState + " -> " + newState);
     currState = newState;
   }
@@ -76,6 +76,8 @@ class StudentSocketImpl extends BaseSocketImpl {
           break;
         case SYN_RCVD:
           changeState(states.ESTABLISHED);
+          break;
+        default:
 
       }
   
