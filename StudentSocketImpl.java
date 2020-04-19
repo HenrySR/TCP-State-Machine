@@ -12,40 +12,71 @@ class StudentSocketImpl extends BaseSocketImpl {
   private Demultiplexer D;
   private Timer tcpTimer;
 
+  // enum to track all possible states of TCP FSM
+  private enum states {
+    CLOSED, LISTEN, SYN_SENT, SYN_RCVD, ESTABLISHED, FIN_WAIT_1, FIN_WAIT_2, CLOSING, CLOSE_WAIT, LAST_ACK, TIME_WAIT
+  }
 
-  StudentSocketImpl(Demultiplexer D) {  // default constructor
+  // current state
+  private states currState = states.CLOSED;
+
+  StudentSocketImpl(Demultiplexer D) { // default constructor
     this.D = D;
   }
 
   /**
    * Connects this socket to the specified port number on the specified host.
    *
-   * @param      address   the IP address of the remote host.
-   * @param      port      the port number.
-   * @exception  IOException  if an I/O error occurs when attempting a
-   *               connection.
+   * @param address the IP address of the remote host.
+   * @param port    the port number.
+   * @exception IOException if an I/O error occurs when attempting a connection.
    */
-  public synchronized void connect(InetAddress address, int port) throws IOException{
+  public synchronized void connect(InetAddress address, int port) throws IOException {
     localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
-    TCPWrapper.send(new TCPPacket(localport, port, 0, 0, false, true, false, 50, null), address);
+    TCPWrapper.send(new TCPPacket(localport, port, 0, -1, false, true, false, 50, null), address);
+    changeState(states.SYN_SENT);
+    while (currState != states.ESTABLISHED) {
+      try {
+        wait(50);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
+
+  private void changeState(states newState){
+    System.out.println("!!! "+ currState + " -> " + newState);
+    currState = newState;
+  }
+
   
   /**
    * Called by Demultiplexer when a packet comes in for this connection
    * @param p The packet that arrived
    */
   public synchronized void receivePacket(TCPPacket p){
+    this.notifyAll();
     try{
-      if(p.synFlag && !p.ackFlag){
-        this.address = p.sourceAddr;
-        this.port = p.sourcePort;
-        D.unregisterListeningSocket(localport, this);
-        D.registerConnection(address, localport, port, this);
-        TCPWrapper.send(new TCPPacket(localport, port, p.ackNum, p.seqNum + 1, true, true, false, 50, null), address);
+      switch(currState){
+        case LISTEN:
+          this.address = p.sourceAddr;
+          this.port = p.sourcePort;
+          D.unregisterListeningSocket(localport, this);
+          D.registerConnection(address, localport, port, this);
+          TCPWrapper.send(new TCPPacket(localport, port, p.ackNum, p.seqNum + 1, true, true, false, 50, null), address);
+          changeState(states.SYN_RCVD);
+          break;
+        case SYN_SENT:
+          TCPWrapper.send(new TCPPacket(localport, port, p.ackNum, p.seqNum + 1, true, false, false, 50, null), address);
+          changeState(states.ESTABLISHED);
+          break;
+        case SYN_RCVD:
+          changeState(states.ESTABLISHED);
+        default:
       }
       
     } catch (IOException e){
@@ -63,6 +94,14 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void acceptConnection() throws IOException {
     D.registerListeningSocket(localport, this);
     System.out.println("register listening socket, localport = " + localport);
+    changeState(currState, states.LISTEN);
+    while (currState != states.ESTABLISHED) {
+      try {
+        wait(50);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   
