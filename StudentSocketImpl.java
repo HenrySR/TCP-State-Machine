@@ -29,7 +29,6 @@ class StudentSocketImpl extends BaseSocketImpl {
     localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
-    System.out.println("register connection, port = " + this.port);
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
     TCPWrapper.send(new TCPPacket(localport, port, 0, 0, false, true, false, 50, null), address);
@@ -40,9 +39,13 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @param p The packet that arrived
    */
   public synchronized void receivePacket(TCPPacket p){
-    System.out.println("receivePacket called, packet = " + p);
     try{
-      D.unregisterListeningSocket(localport, this);
+      if(p.synFlag && !p.ackFlag){
+        D.unregisterListeningSocket(localport, this);
+        D.registerConnection(address, p.destPort, p.sourcePort, this);
+        TCPWrapper.send(new TCPPacket(localport, p.sourcePort, p.ackNum, p.seqNum + 1, true, true, false, 50, null), address);
+      }
+      
     } catch (IOException e){
       System.out.println(e);
     }
