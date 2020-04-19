@@ -96,7 +96,7 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void acceptConnection() throws IOException {
     D.registerListeningSocket(localport, this);
     System.out.println("register listening socket, localport = " + localport);
-    changeState(currState, states.LISTEN);
+    changeState(states.LISTEN);
     while (currState != states.ESTABLISHED) {
       try {
         wait(50);
