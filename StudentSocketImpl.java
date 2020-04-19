@@ -76,9 +76,9 @@ class StudentSocketImpl extends BaseSocketImpl {
           break;
         case SYN_RCVD:
           changeState(states.ESTABLISHED);
-        default:
+
       }
-      
+  
     } catch (IOException e){
       System.out.println(e);
     }
