@@ -41,9 +41,11 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void receivePacket(TCPPacket p){
     try{
       if(p.synFlag && !p.ackFlag){
+        this.address = p.sourceAddr;
+        this.port = p.sourcePort;
         D.unregisterListeningSocket(localport, this);
-        D.registerConnection(address, p.destPort, p.sourcePort, this);
-        TCPWrapper.send(new TCPPacket(localport, p.sourcePort, p.ackNum, p.seqNum + 1, true, true, false, 50, null), address);
+        D.registerConnection(address, localport, port, this);
+        TCPWrapper.send(new TCPPacket(localport, port, p.ackNum, p.seqNum + 1, true, true, false, 50, null), address);
       }
       
     } catch (IOException e){
