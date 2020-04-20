@@ -19,6 +19,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 
   // current state
   private states currState = states.CLOSED;
+  private int seqNum = 0;
+  private int ackNum = 0;
 
   StudentSocketImpl(Demultiplexer D) { // default constructor
     this.D = D;
@@ -37,7 +39,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     this.port = port;
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
-    TCPWrapper.send(new TCPPacket(localport, port, 0, -1, false, true, false, 50, null), address);
+    TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, false, true, false, 50, null), address);
     changeState(states.SYN_SENT);
     while (currState != states.ESTABLISHED) {
       try {
@@ -48,9 +50,19 @@ class StudentSocketImpl extends BaseSocketImpl {
     }
   }
 
-  private synchronized void changeState(states newState){
+  /**
+   * Changes state and handles the final socket closing
+   * @param newState an enum representing state in the TCP FSM
+   * @throws IOException if unregistering the socket goes awry
+   */
+  private synchronized void changeState(states newState) throws IOException{
     System.out.println("!!! "+ currState + " -> " + newState);
     currState = newState;
+    if(newState == states.TIME_WAIT){
+      createTimerTask(30000, new Object());
+      D.unregisterConnection(address, localport, port, this);
+      changeState(states.CLOSED);  
+    }
   }
 
   
@@ -65,19 +77,42 @@ class StudentSocketImpl extends BaseSocketImpl {
         case LISTEN:
           this.address = p.sourceAddr;
           this.port = p.sourcePort;
+          this.seqNum = p.ackNum;
+          this.ackNum = p.seqNum + 1;
           D.unregisterListeningSocket(localport, this);
           D.registerConnection(address, localport, port, this);
-          TCPWrapper.send(new TCPPacket(localport, port, p.ackNum, p.seqNum + 1, true, true, false, 50, null), address);
+          TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, true, true, false, 50, null), address);
           changeState(states.SYN_RCVD);
           break;
         case SYN_SENT:
-          TCPWrapper.send(new TCPPacket(localport, port, p.ackNum, p.seqNum + 1, true, false, false, 50, null), address);
+          TCPWrapper.send(new TCPPacket(localport, port, seqNum + 1, ackNum, true, false, false, 50, null), address);
           changeState(states.ESTABLISHED);
           break;
         case SYN_RCVD:
           changeState(states.ESTABLISHED);
           break;
+        case ESTABLISHED:
+          if(p.finFlag){
+            TCPWrapper.send(new TCPPacket(localport, port, seqNum, p.ackNum, true, false, false, 50, null), address);
+            changeState(states.CLOSE_WAIT);
+          }
+          break;
+        case FIN_WAIT_1:
+          if(p.finFlag){
+            changeState(states.CLOSING);
+            TCPWrapper.send(new TCPPacket(localport, port, seqNum, p.ackNum, true, false, false, 50, null), address);
+          } else if (p.ackFlag){
+            changeState(states.FIN_WAIT_2);
+          }
+          break;
+        case CLOSING: case LAST_ACK:
+          changeState(states.TIME_WAIT);
+          break;
+        case FIN_WAIT_2:
+          TCPWrapper.send(new TCPPacket(localport, port, seqNum, p.ackNum, true, false, false, 50, null), address);
+          changeState(states.TIME_WAIT);
         default:
+
 
       }
   
@@ -95,7 +130,6 @@ class StudentSocketImpl extends BaseSocketImpl {
    */
   public synchronized void acceptConnection() throws IOException {
     D.registerListeningSocket(localport, this);
-    System.out.println("register listening socket, localport = " + localport);
     changeState(states.LISTEN);
     while (currState != states.ESTABLISHED) {
       try {
@@ -145,6 +179,13 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @exception  IOException  if an I/O error occurs when closing this socket.
    */
   public synchronized void close() throws IOException {
+    if(currState == states.ESTABLISHED)
+      changeState(states.FIN_WAIT_1);
+    else if(currState == states.CLOSE_WAIT)
+      changeState(states.LAST_ACK);
+    else // nothing should happen if not in either state
+      return;
+    TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 50, null), address);
   }
 
   /** 
