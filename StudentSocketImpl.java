@@ -185,7 +185,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       changeState(states.LAST_ACK);
     else // nothing should happen if not in either state
       return;
-    TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, true, false, false, 50, null), address);
+    TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, false, false, true, 50, null), address);
   }
 
   /** 
