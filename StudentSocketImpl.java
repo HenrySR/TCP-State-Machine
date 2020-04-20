@@ -186,6 +186,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     else // nothing should happen if not in either state
       return;
     TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, false, false, true, 50, null), address);
+    createTimerTask(10*1000, new Object());
   }
 
   /** 
@@ -196,6 +197,7 @@ class StudentSocketImpl extends BaseSocketImpl {
   private TCPTimerTask createTimerTask(long delay, Object ref){
     if(tcpTimer == null)
       tcpTimer = new Timer(false);
+    System.out.println("Timer task called, state = " + currState + " len = " + delay);
     return new TCPTimerTask(tcpTimer, delay, this, ref);
   }
 
@@ -210,5 +212,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     // this must run only once the last timer (30 second timer) has expired
     tcpTimer.cancel();
     tcpTimer = null;
+    System.out.println("Timer task ended, state = " + currState);
+
   }
 }
