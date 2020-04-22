@@ -20,8 +20,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 
   // current state
   private states currState = states.CLOSED;
-  private int seqNum = 0;
-  private int ackNum = 0;
+  private int seqNum;
+  private int ackNum;
 
   // track timers and pkts by state for retransmission
   private Hashtable<states, TCPTimerTask> timers = new Hashtable<states, TCPTimerTask>();
@@ -42,6 +42,8 @@ class StudentSocketImpl extends BaseSocketImpl {
     localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
+    seqNum = 0;
+    ackNum = 0;
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
     changeState(states.SYN_SENT);
@@ -86,7 +88,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       }
       TCPWrapper.send(pktToSend, address);
     } else {
-      pktToSend = new TCPPacket(localport, port, seqNum++, -2, ackFlag, synFlag, finFlag, 50, null);
+      pktToSend = new TCPPacket(localport, port, seqNum, ackNum, ackFlag, synFlag, finFlag, 50, null);
       timers.put(currState, createTimerTask(2500, new Object()));
       TCPWrapper.send(pktToSend, address);
       packets.put(currState, pktToSend);
@@ -100,7 +102,10 @@ class StudentSocketImpl extends BaseSocketImpl {
    */
   public synchronized void receivePacket(TCPPacket p) {
     this.notifyAll();
-    ackNum = p.seqNum;
+    if(p.finFlag || p.synFlag){
+      seqNum = p.ackNum;
+      ackNum = p.seqNum + 1;
+    }
     try {
       switch (currState) {
         case LISTEN:
@@ -157,6 +162,8 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void acceptConnection() throws IOException {
     D.registerListeningSocket(localport, this);
     changeState(states.LISTEN);
+    seqNum = -1;
+    ackNum = -2;
     while (currState != states.ESTABLISHED) {
       try {
         wait(50);
