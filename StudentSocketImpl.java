@@ -86,7 +86,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       }
       TCPWrapper.send(pktToSend, address);
     } else {
-      pktToSend = new TCPPacket(localport, port, seqNum++, ackNum, ackFlag, synFlag, finFlag, 50, null);
+      pktToSend = new TCPPacket(localport, port, seqNum++, -2, ackFlag, synFlag, finFlag, 50, null);
       timers.put(currState, createTimerTask(2500, new Object()));
       TCPWrapper.send(pktToSend, address);
       packets.put(currState, pktToSend);
