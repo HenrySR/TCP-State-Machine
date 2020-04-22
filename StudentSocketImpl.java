@@ -102,9 +102,9 @@ class StudentSocketImpl extends BaseSocketImpl {
    */
   public synchronized void receivePacket(TCPPacket p) {
     this.notifyAll();
-    if(p.finFlag || p.synFlag){
-      seqNum = p.ackNum;
-      ackNum = p.seqNum + 1;
+    if((p.finFlag || p.synFlag) && !p.ackFlag){
+      ackNum = p.seqNum;
+      seqNum = p.ackNum + 1;
     }
     try {
       switch (currState) {
