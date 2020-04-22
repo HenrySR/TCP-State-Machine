@@ -20,8 +20,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 
   // current state
   private states currState = states.CLOSED;
-  private int seqNum = -1;
-  private int ackNum = -1;
+  private int seqNum = 0;
+  private int ackNum = 0;
 
   // track timers and pkts by state for retransmission
   private Hashtable<states, TCPTimerTask> timers = new Hashtable<states, TCPTimerTask>();
