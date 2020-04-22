@@ -1,5 +1,6 @@
 import java.net.*;
 import java.io.*;
+import java.util.Hashtable;
 import java.util.Timer;
 
 class StudentSocketImpl extends BaseSocketImpl {
@@ -19,8 +20,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 
   // current state
   private states currState = states.CLOSED;
-  private int seqNum = 0;
-  private int ackNum = 0;
+  private int seqNum = -1;
+  private int ackNum = -1;
+
+  // track timers and pkts by state for retransmission
+  private Hashtable<states, TCPTimerTask> timers = new Hashtable<states, TCPTimerTask>();
+  private Hashtable<states, TCPPacket> packets = new Hashtable<states, TCPPacket>();
 
   StudentSocketImpl(Demultiplexer D) { // default constructor
     this.D = D;
@@ -39,8 +44,8 @@ class StudentSocketImpl extends BaseSocketImpl {
     this.port = port;
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
-    TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, false, true, false, 50, null), address);
     changeState(states.SYN_SENT);
+    sendpkt(false, true, false, false);
     while (currState != states.ESTABLISHED) {
       try {
         wait(50);
@@ -52,81 +57,102 @@ class StudentSocketImpl extends BaseSocketImpl {
 
   /**
    * Changes state and handles the final socket closing
+   * 
    * @param newState an enum representing state in the TCP FSM
    * @throws IOException if unregistering the socket goes awry
    */
-  private synchronized void changeState(states newState) throws IOException{
-    System.out.println("!!! "+ currState + " -> " + newState);
+  private synchronized void changeState(states newState) throws IOException {
+    TCPTimerTask currTimer = timers.get(currState);
+    if (currTimer != null && newState != states.CLOSING) {
+      currTimer.cancel();
+      timers.remove(currState, currTimer);
+      packets.remove(currState);
+    }
+    System.out.println("!!! " + currState + " -> " + newState);
     currState = newState;
-    if(newState == states.TIME_WAIT){
+    if (newState == states.TIME_WAIT) {
       createTimerTask(30000, new Object());
       D.unregisterConnection(address, localport, port, this);
-      changeState(states.CLOSED);  
     }
   }
 
-  
+  private synchronized void sendpkt(boolean ackFlag, boolean synFlag, boolean finFlag, boolean retransAck) {
+    TCPPacket pktToSend;
+    if (ackFlag) {
+      pktToSend = new TCPPacket(localport, port, -2, ackNum, ackFlag, synFlag, finFlag, 50, null);
+      if(retransAck){
+        timers.put(currState, createTimerTask(2500, new Object()));
+        packets.put(currState, pktToSend);
+      }
+      TCPWrapper.send(pktToSend, address);
+    } else {
+      pktToSend = new TCPPacket(localport, port, seqNum++, ackNum, ackFlag, synFlag, finFlag, 50, null);
+      timers.put(currState, createTimerTask(2500, new Object()));
+      TCPWrapper.send(pktToSend, address);
+      packets.put(currState, pktToSend);
+    } 
+  }
+
   /**
    * Called by Demultiplexer when a packet comes in for this connection
+   * 
    * @param p The packet that arrived
    */
-  public synchronized void receivePacket(TCPPacket p){
+  public synchronized void receivePacket(TCPPacket p) {
     this.notifyAll();
-    try{
-      switch(currState){
+    ackNum = p.seqNum;
+    try {
+      switch (currState) {
         case LISTEN:
-          this.address = p.sourceAddr;
-          this.port = p.sourcePort;
-          this.seqNum = p.ackNum;
-          this.ackNum = p.seqNum + 1;
+          address = p.sourceAddr;
+          port = p.sourcePort;
           D.unregisterListeningSocket(localport, this);
           D.registerConnection(address, localport, port, this);
-          TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, true, true, false, 50, null), address);
           changeState(states.SYN_RCVD);
+          sendpkt(true, true, false, (((p.finFlag || p.synFlag) && !p.ackFlag)));
           break;
         case SYN_SENT:
-          TCPWrapper.send(new TCPPacket(localport, port, seqNum + 1, ackNum, true, false, false, 50, null), address);
           changeState(states.ESTABLISHED);
+          sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
           break;
         case SYN_RCVD:
           changeState(states.ESTABLISHED);
           break;
         case ESTABLISHED:
-          if(p.finFlag){
-            TCPWrapper.send(new TCPPacket(localport, port, seqNum, p.ackNum, true, false, false, 50, null), address);
+          if (p.finFlag) {
             changeState(states.CLOSE_WAIT);
+            sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
           }
           break;
         case FIN_WAIT_1:
-          if(p.finFlag){
+          if (p.finFlag) {
             changeState(states.CLOSING);
-            TCPWrapper.send(new TCPPacket(localport, port, seqNum, p.ackNum, true, false, false, 50, null), address);
-          } else if (p.ackFlag){
+            sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
+          } else if (p.ackFlag) {
             changeState(states.FIN_WAIT_2);
           }
           break;
-        case CLOSING: case LAST_ACK:
+        case CLOSING:
+        case LAST_ACK:
           changeState(states.TIME_WAIT);
           break;
         case FIN_WAIT_2:
-          TCPWrapper.send(new TCPPacket(localport, port, seqNum, p.ackNum, true, false, false, 50, null), address);
           changeState(states.TIME_WAIT);
+          sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
         default:
-
-
       }
-  
-    } catch (IOException e){
+
+    } catch (IOException e) {
       System.out.println(e);
     }
   }
-  
-  /** 
+
+  /**
    * Waits for an incoming connection to arrive to connect this socket to
-   * Ultimately this is called by the application calling 
-   * ServerSocket.accept(), but this method belongs to the Socket object 
-   * that will be returned, not the listening ServerSocket.
-   * Note that localport is already set prior to this being called.
+   * Ultimately this is called by the application calling ServerSocket.accept(),
+   * but this method belongs to the Socket object that will be returned, not the
+   * listening ServerSocket. Note that localport is already set prior to this
+   * being called.
    */
   public synchronized void acceptConnection() throws IOException {
     D.registerListeningSocket(localport, this);
@@ -140,79 +166,82 @@ class StudentSocketImpl extends BaseSocketImpl {
     }
   }
 
-  
   /**
-   * Returns an input stream for this socket.  Note that this method cannot
-   * create a NEW InputStream, but must return a reference to an 
-   * existing InputStream (that you create elsewhere) because it may be
-   * called more than once.
+   * Returns an input stream for this socket. Note that this method cannot create
+   * a NEW InputStream, but must return a reference to an existing InputStream
+   * (that you create elsewhere) because it may be called more than once.
    *
-   * @return     a stream for reading from this socket.
-   * @exception  IOException  if an I/O error occurs when creating the
-   *               input stream.
+   * @return a stream for reading from this socket.
+   * @exception IOException if an I/O error occurs when creating the input stream.
    */
   public InputStream getInputStream() throws IOException {
     // project 4 return appIS;
     return null;
-    
+
   }
 
   /**
-   * Returns an output stream for this socket.  Note that this method cannot
-   * create a NEW InputStream, but must return a reference to an 
-   * existing InputStream (that you create elsewhere) because it may be
-   * called more than once.
+   * Returns an output stream for this socket. Note that this method cannot create
+   * a NEW InputStream, but must return a reference to an existing InputStream
+   * (that you create elsewhere) because it may be called more than once.
    *
-   * @return     an output stream for writing to this socket.
-   * @exception  IOException  if an I/O error occurs when creating the
-   *               output stream.
+   * @return an output stream for writing to this socket.
+   * @exception IOException if an I/O error occurs when creating the output
+   *                        stream.
    */
   public OutputStream getOutputStream() throws IOException {
     // project 4 return appOS;
     return null;
   }
 
-
   /**
-   * Closes this socket. 
+   * Closes this socket.
    *
-   * @exception  IOException  if an I/O error occurs when closing this socket.
+   * @exception IOException if an I/O error occurs when closing this socket.
    */
   public synchronized void close() throws IOException {
-    if(currState == states.ESTABLISHED)
+    if (currState == states.ESTABLISHED)
       changeState(states.FIN_WAIT_1);
-    else if(currState == states.CLOSE_WAIT)
+    else if (currState == states.CLOSE_WAIT)
       changeState(states.LAST_ACK);
     else // nothing should happen if not in either state
       return;
-    TCPWrapper.send(new TCPPacket(localport, port, seqNum, ackNum, false, false, true, 50, null), address);
-    createTimerTask(10*1000, new Object());
+    sendpkt(false, false, true, false);
+    createTimerTask(10 * 1000, new Object());
   }
 
-  /** 
+  /**
    * create TCPTimerTask instance, handling tcpTimer creation
+   * 
    * @param delay time in milliseconds before call
-   * @param ref generic reference to be returned to handleTimer
+   * @param ref   generic reference to be returned to handleTimer
    */
-  private TCPTimerTask createTimerTask(long delay, Object ref){
-    if(tcpTimer == null)
+  private TCPTimerTask createTimerTask(long delay, Object ref) {
+    if (tcpTimer == null)
       tcpTimer = new Timer(false);
-    System.out.println("Timer task called, state = " + currState + " len = " + delay);
     return new TCPTimerTask(tcpTimer, delay, this, ref);
   }
 
-
   /**
    * handle timer expiration (called by TCPTimerTask)
-   * @param ref Generic reference that can be used by the timer to return 
-   * information.
+   * 
+   * @param ref Generic reference that can be used by the timer to return
+   *            information.
    */
-  public synchronized void handleTimer(Object ref){
-
+  public synchronized void handleTimer(Object ref) {
     // this must run only once the last timer (30 second timer) has expired
-    tcpTimer.cancel();
-    tcpTimer = null;
-    System.out.println("Timer task ended, state = " + currState);
-
+    if (currState == states.TIME_WAIT) {
+      tcpTimer.cancel();
+      tcpTimer = null;
+      try {
+        changeState(states.CLOSED);
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+    else{
+      TCPWrapper.send(packets.get(currState), address);
+      timers.replace(currState, createTimerTask(2500, new Object()));
+    }
   }
 }
