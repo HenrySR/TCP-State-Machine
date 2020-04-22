@@ -162,8 +162,8 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void acceptConnection() throws IOException {
     D.registerListeningSocket(localport, this);
     changeState(states.LISTEN);
-    seqNum = -1;
-    ackNum = -2;
+    seqNum = 10;
+    ackNum = 10;
     while (currState != states.ESTABLISHED) {
       try {
         wait(50);
