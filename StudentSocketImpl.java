@@ -229,7 +229,6 @@ class StudentSocketImpl extends BaseSocketImpl {
     else
       return;
     sendpkt(false, false, true);
-    createTimerTask(10 * 1000, new Object());
   }
 
   /**
