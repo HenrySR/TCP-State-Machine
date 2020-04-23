@@ -150,7 +150,11 @@ class StudentSocketImpl extends BaseSocketImpl {
           break;
         case CLOSING:
         case LAST_ACK:
-          changeState(states.TIME_WAIT);
+          if(p.finFlag) {
+            sendpkt(true, false, false);
+          } else if (p.ackFlag) {
+            changeState(states.TIME_WAIT);
+          }
           break;
         case FIN_WAIT_2:
           changeState(states.TIME_WAIT);
