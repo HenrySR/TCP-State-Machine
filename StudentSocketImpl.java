@@ -119,7 +119,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           if(p.ackFlag){
             changeState(states.ESTABLISHED);
           } else if (p.finFlag){
-            changeState(states.CLOSE_WAIT);
+            changeState(states.FIN_WAIT_1);
             sendpkt(true, false, false);
           }
           break;
@@ -216,12 +216,10 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @exception IOException if an I/O error occurs when closing this socket.
    */
   public synchronized void close() throws IOException {
-    if (currState == states.ESTABLISHED)
-      changeState(states.FIN_WAIT_1);
-    else if (currState == states.CLOSE_WAIT)
+    if (currState == states.CLOSE_WAIT)
       changeState(states.LAST_ACK);
-    else // nothing should happen if not in either state
-      return;
+    else 
+      changeState(states.FIN_WAIT_1);
     sendpkt(false, false, true);
     createTimerTask(10 * 1000, new Object());
   }
