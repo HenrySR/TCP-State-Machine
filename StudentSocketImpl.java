@@ -86,8 +86,8 @@ class StudentSocketImpl extends BaseSocketImpl {
       pktToSend = new TCPPacket(localport, port, seqNum, ackNum, ackFlag, synFlag, finFlag, 50, null);
       timers.put(currState, createTimerTask(2500, new Object()));
       TCPWrapper.send(pktToSend, address);
-      packets.put(currState, pktToSend);
     } 
+    packets.put(currState, pktToSend);
   }
 
   /**
@@ -256,7 +256,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       }
     }
     else{
-      System.out.println("In handleTimer, currState = " + currState + "packet = " + packets.get(currState));
+      System.out.println("In handleTimer, currState = " + currState + " packet = " + packets.get(currState));
       TCPWrapper.send(packets.get(currState), address);
       timers.replace(currState, createTimerTask(2500, new Object()));
     }
