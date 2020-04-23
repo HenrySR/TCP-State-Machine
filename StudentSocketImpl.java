@@ -126,7 +126,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           if(p.ackFlag){
             changeState(states.ESTABLISHED);
           } else if (p.finFlag){
-            changeState(states.FIN_WAIT_1);
+            changeState(states.CLOSE_WAIT);
             sendpkt(true, false, false);
           }
           break;
@@ -262,6 +262,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     }
     else{
       System.out.println("In handleTimer, currState = " + currState + " packet =" + packets.get(currState));
+      System.out.println(packets);
       TCPWrapper.send(packets.get(currState), address);
       timers.replace(currState, createTimerTask(2500, new Object()));
     }
