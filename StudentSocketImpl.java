@@ -134,7 +134,7 @@ class StudentSocketImpl extends BaseSocketImpl {
         case FIN_WAIT_1:
           if (p.finFlag) {
             changeState(states.CLOSING);
-            sendpkt(true, false, false,);
+            sendpkt(true, false, false);
           } else if (p.ackFlag && !p.synFlag) {
             changeState(states.FIN_WAIT_2);
           } else if (p.ackFlag && p.synFlag) {
