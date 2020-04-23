@@ -64,10 +64,17 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @throws IOException if unregistering the socket goes awry
    */
   private synchronized void changeState(states newState) throws IOException {
-    TCPTimerTask currTimer = timers.get(currState);
-    if (currTimer != null && newState != states.CLOSING) {
+    TCPTimerTask currTimer;
+    TCPTimerTask FinWaitTimer = null;
+    currTimer = timers.get(currState);
+    if(currState == states.CLOSING)
+      FinWaitTimer = timers.get(states.FIN_WAIT_1);
+    if (currTimer != null && newState != states.CLOSING){
       currTimer.cancel();
-      timers.remove(currState, currTimer);
+      timers.remove(currState, currTimer); 
+    } if (currState == states.CLOSING && FinWaitTimer != null){
+      FinWaitTimer.cancel();
+      timers.remove(states.FIN_WAIT_1, FinWaitTimer);
     }
     System.out.println("!!! " + currState + " -> " + newState);
     currState = newState;
