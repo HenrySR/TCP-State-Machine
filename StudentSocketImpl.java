@@ -218,8 +218,10 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void close() throws IOException {
     if (currState == states.CLOSE_WAIT)
       changeState(states.LAST_ACK);
-    else 
+    else if (currState != states.CLOSED && address != null)
       changeState(states.FIN_WAIT_1);
+    else
+      return;
     sendpkt(false, false, true);
     createTimerTask(10 * 1000, new Object());
   }
@@ -254,7 +256,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       }
     }
     else{
-      System.out.println("In handleTimer, currState = " + currState + " packet = " + packets.get(currState));
+      System.out.println("In handleTimer, currState = " + currState + " packet =" + packets.get(currState));
       TCPWrapper.send(packets.get(currState), address);
       timers.replace(currState, createTimerTask(2500, new Object()));
     }
