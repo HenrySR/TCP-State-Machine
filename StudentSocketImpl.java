@@ -261,8 +261,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       }
     }
     else{
-      System.out.println("In handleTimer, currState = " + currState + " packet =" + packets.get(currState));
-      System.out.println(packets);
+      System.out.println(timers);
       TCPWrapper.send(packets.get(currState), address);
       timers.replace(currState, createTimerTask(2500, new Object()));
     }
