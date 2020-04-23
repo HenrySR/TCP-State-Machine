@@ -132,7 +132,7 @@ class StudentSocketImpl extends BaseSocketImpl {
             changeState(states.CLOSE_WAIT);
             sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
           } else if (p.synFlag && p.ackFlag){
-            TCPWrapper.send(packets.get(states.SYN_SENT),address);
+            sendpkt(true, false, false,((p.finFlag || p.synFlag) && !p.ackFlag));
           }
           break;
         case FIN_WAIT_1:
