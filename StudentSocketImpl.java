@@ -68,12 +68,11 @@ class StudentSocketImpl extends BaseSocketImpl {
     if (currTimer != null && newState != states.CLOSING) {
       currTimer.cancel();
       timers.remove(currState, currTimer);
-      packets.remove(currState);
     }
     System.out.println("!!! " + currState + " -> " + newState);
     currState = newState;
     if (newState == states.TIME_WAIT) {
-      createTimerTask(30000, new Object());
+      timers.put(currState, createTimerTask(30000, new Object()));
       D.unregisterConnection(address, localport, port, this);
     }
   }
@@ -121,20 +120,29 @@ class StudentSocketImpl extends BaseSocketImpl {
           sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
           break;
         case SYN_RCVD:
-          changeState(states.ESTABLISHED);
+          if(p.ackFlag){
+            changeState(states.ESTABLISHED);
+          } else if (p.finFlag){
+            changeState(states.CLOSE_WAIT);
+            sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
+          }
           break;
         case ESTABLISHED:
           if (p.finFlag) {
             changeState(states.CLOSE_WAIT);
             sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
+          } else if (p.synFlag && p.ackFlag){
+            TCPWrapper.send(packets.get(states.SYN_SENT),address);
           }
           break;
         case FIN_WAIT_1:
           if (p.finFlag) {
             changeState(states.CLOSING);
             sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
-          } else if (p.ackFlag) {
+          } else if (p.ackFlag && !p.synFlag) {
             changeState(states.FIN_WAIT_2);
+          } else if (p.ackFlag && p.synFlag) {
+            sendpkt(false, false, true, false);
           }
           break;
         case CLOSING:
@@ -144,7 +152,12 @@ class StudentSocketImpl extends BaseSocketImpl {
         case FIN_WAIT_2:
           changeState(states.TIME_WAIT);
           sendpkt(true, false, false, ((p.finFlag || p.synFlag) && !p.ackFlag));
-        default:
+          break;
+        case TIME_WAIT:
+          TCPWrapper.send(packets.get(states.FIN_WAIT_2), address);
+          timers.get(currState).cancel();
+          timers.replace(currState, createTimerTask(30*1000, new Object()));
+          default:
       }
 
     } catch (IOException e) {
