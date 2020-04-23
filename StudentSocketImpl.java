@@ -151,7 +151,6 @@ class StudentSocketImpl extends BaseSocketImpl {
           break;
         case TIME_WAIT:
           sendpkt(true, false, false);
-          timers.get(currState).cancel();
           timers.replace(currState, createTimerTask(30*1000, new Object()));
           default:
       }
