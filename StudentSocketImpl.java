@@ -222,7 +222,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       changeState(states.LAST_ACK);
     else // nothing should happen if not in either state
       return;
-    sendpkt(false, false, true, false);
+    sendpkt(false, false, true);
     createTimerTask(10 * 1000, new Object());
   }
 
