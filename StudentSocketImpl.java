@@ -71,10 +71,10 @@ class StudentSocketImpl extends BaseSocketImpl {
     }
     System.out.println("!!! " + currState + " -> " + newState);
     currState = newState;
-    if (newState == states.TIME_WAIT) {
+    if (newState == states.TIME_WAIT) 
       timers.put(currState, createTimerTask(30000, new Object()));
+    if (newState == states.CLOSED)
       D.unregisterConnection(address, localport, port, this);
-    }
   }
 
   private synchronized void sendpkt(boolean ackFlag, boolean synFlag, boolean finFlag, boolean retransAck) {
@@ -253,6 +253,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     if (currState == states.TIME_WAIT) {
       tcpTimer.cancel();
       tcpTimer = null;
+
       try {
         changeState(states.CLOSED);
       } catch (IOException e) {
