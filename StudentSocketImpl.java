@@ -98,9 +98,12 @@ class StudentSocketImpl extends BaseSocketImpl {
     } else {
       System.out.println("b");
       pktToSend = new TCPPacket(localport, port, seqNum, ackNum, ackFlag, synFlag, finFlag, 50, null);
+      System.out.println("e");
       timers.put(currState, createTimerTask(2500, new Object()));
+      System.out.println("c");
       TCPWrapper.send(pktToSend, address);
     } 
+    System.out.println("d");
     packets.put(currState, pktToSend);
   }
 
@@ -180,7 +183,7 @@ class StudentSocketImpl extends BaseSocketImpl {
         case TIME_WAIT:
           if(p.finFlag){
           sendpkt(true, false, false);
-          
+          System.out.println("15");
           timers.replace(currState, createTimerTask(30*1000, new Object()));}
           System.out.println("5");
           default:
@@ -250,6 +253,8 @@ class StudentSocketImpl extends BaseSocketImpl {
       changeState(states.LAST_ACK);
     else if (currState != states.CLOSED && address != null)
       changeState(states.FIN_WAIT_1);
+    else
+      return;
     sendpkt(false, false, true);
   }
 
