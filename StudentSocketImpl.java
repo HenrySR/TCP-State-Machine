@@ -121,7 +121,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           sendpkt(true, true, false);
           break;
         case SYN_SENT:
-
+        
           changeState(states.ESTABLISHED);
           sendpkt(true, false, false);
           break;
@@ -130,6 +130,7 @@ class StudentSocketImpl extends BaseSocketImpl {
             changeState(states.ESTABLISHED);
           }
           else if (p.finFlag){
+            changeState(states.ESTABLISHED);
             changeState(states.CLOSE_WAIT);
             sendpkt(true, false, false);
           }

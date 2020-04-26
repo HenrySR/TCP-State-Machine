@@ -87,9 +87,9 @@ class TCPWrapper {
         
         randomPacketsDropped = true;
         rateToDrop = rate;
-        long seed1 = 15449251;
-        numberGenerator = new Random(seed1);
-        System.out.println(seed);
+        //long seed1 = 15449251;
+        numberGenerator = new Random(seed);
+        //System.out.println(seed);
     }
 
     
