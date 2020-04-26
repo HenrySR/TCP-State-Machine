@@ -130,8 +130,8 @@ class StudentSocketImpl extends BaseSocketImpl {
             changeState(states.ESTABLISHED);
           }
           else if (p.finFlag){
-            changeState(states.CLOSE_WAIT);
-            sendpkt(true, false, false);
+            changeState(states.ESTABLISHED);
+
           }
           break;
         case ESTABLISHED:
