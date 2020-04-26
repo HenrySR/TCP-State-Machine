@@ -71,10 +71,10 @@ class StudentSocketImpl extends BaseSocketImpl {
       FinWaitTimer = timers.get(states.FIN_WAIT_1);
     if (currTimer != null && newState != states.CLOSING){
       currTimer.cancel();
+      System.out.println("8");
       timers.remove(currState, currTimer); 
     } if (currState == states.CLOSING && FinWaitTimer != null){
-      FinWaitTimer.cancel();
-      timers.remove(states.FIN_WAIT_1, FinWaitTimer);
+      tcpTimer.cancel();
     }
     System.out.println("!!! " + currState + " -> " + newState);
     currState = newState;
@@ -82,6 +82,8 @@ class StudentSocketImpl extends BaseSocketImpl {
       timers.put(currState, createTimerTask(30000, new Object()));
     if (newState == states.CLOSED)
       D.unregisterConnection(address, localport, port, this);
+
+      System.out.println("1");
   }
 
   private synchronized void sendpkt(boolean ackFlag, boolean synFlag, boolean finFlag) {
@@ -147,6 +149,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           } else if (p.ackFlag && p.synFlag) {
             sendpkt(false, false, true);
           }
+          System.out.println("2");
           break;
         case CLOSING:
           if(p.ackFlag){
@@ -155,22 +158,27 @@ class StudentSocketImpl extends BaseSocketImpl {
           else if(p.finFlag){
             sendpkt(true, false, false);
           }
+          System.out.println("3");
+          break;
         case LAST_ACK:
           if(p.finFlag) {
             sendpkt(true, false, false);
           } else if (p.ackFlag) {
             changeState(states.TIME_WAIT);
           }
+          System.out.println("4");
           break;
         case FIN_WAIT_2:
           changeState(states.TIME_WAIT);
           sendpkt(true, false, false);
+          System.out.println("6");
           break;
         case TIME_WAIT:
           if(p.finFlag){
           sendpkt(true, false, false);
-          tcpTimer.cancel();
+          
           timers.replace(currState, createTimerTask(30*1000, new Object()));}
+          System.out.println("5");
           default:
       }
 
@@ -271,6 +279,7 @@ class StudentSocketImpl extends BaseSocketImpl {
       }
     }
     else{
+      System.out.println("10");
       System.out.println(timers);
       TCPWrapper.send(packets.get(currState), address);
       timers.replace(currState, createTimerTask(2500, new Object()));
