@@ -42,8 +42,8 @@ class StudentSocketImpl extends BaseSocketImpl {
     localport = D.getNextAvailablePort();
     this.address = address;
     this.port = port;
-    seqNum = 0;
-    ackNum = 0;
+    seqNum = 1000;
+    ackNum = 100;
     D.registerConnection(address, localport, port, this);
     TCPWrapper.setUDPPortNumber(port);
     changeState(states.SYN_SENT);
@@ -149,6 +149,12 @@ class StudentSocketImpl extends BaseSocketImpl {
           }
           break;
         case CLOSING:
+          if(p.ackFlag){
+            changeState(states.TIME_WAIT);
+          }
+          else if(p.finFlag){
+            sendpkt(true, false, false);
+          }
         case LAST_ACK:
           if(p.finFlag) {
             sendpkt(true, false, false);
@@ -161,8 +167,10 @@ class StudentSocketImpl extends BaseSocketImpl {
           sendpkt(true, false, false);
           break;
         case TIME_WAIT:
+          if(p.finFlag){
           sendpkt(true, false, false);
-          timers.replace(currState, createTimerTask(30*1000, new Object()));
+          tcpTimer.cancel();
+          timers.replace(currState, createTimerTask(30*1000, new Object()));}
           default:
       }
 
@@ -230,8 +238,6 @@ class StudentSocketImpl extends BaseSocketImpl {
       changeState(states.LAST_ACK);
     else if (currState != states.CLOSED && address != null)
       changeState(states.FIN_WAIT_1);
-    else
-      return;
     sendpkt(false, false, true);
   }
 
