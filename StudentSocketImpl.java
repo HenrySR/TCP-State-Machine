@@ -137,8 +137,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           if(p.ackFlag){
             changeState(states.ESTABLISHED);
           }
-            else if (p.finFlag){
-            changeState(states.CLOSE_WAIT);
+            else if (p.synFlag){
             sendpkt(true, false, false);
           }
           break;
@@ -156,6 +155,7 @@ class StudentSocketImpl extends BaseSocketImpl {
             changeState(states.CLOSING);
             sendpkt(true, false, false);
           } else if (p.ackFlag && !p.synFlag) {
+            System.out.println("21");
             changeState(states.FIN_WAIT_2);
           } else if (p.ackFlag && p.synFlag) {
             sendpkt(true, false, false);
@@ -189,6 +189,9 @@ class StudentSocketImpl extends BaseSocketImpl {
           sendpkt(true, false, false);
           System.out.println("15");
           timers.replace(currState, createTimerTask(30*1000, new Object()));}
+          if(p.ackFlag){
+            sendpkt(true, false, false);
+          }
           System.out.println("5");
           default:
       }
