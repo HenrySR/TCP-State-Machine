@@ -208,7 +208,7 @@ class StudentSocketImpl extends BaseSocketImpl {
     changeState(states.LISTEN);
     seqNum = 10;
     ackNum = 10;
-    while (currState != states.ESTABLISHED) {
+    while (currState != states.ESTABLISHED && currState != states.CLOSE_WAIT) {
       try {
         wait(50);
       } catch (InterruptedException e) {
