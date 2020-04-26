@@ -130,8 +130,8 @@ class StudentSocketImpl extends BaseSocketImpl {
             changeState(states.ESTABLISHED);
           }
           else if (p.finFlag){
-            changeState(states.ESTABLISHED);
-
+            changeState(states.CLOSE_WAIT);
+            sendpkt(true, false, false);
           }
           break;
         case ESTABLISHED:
@@ -186,6 +186,11 @@ class StudentSocketImpl extends BaseSocketImpl {
             sendpkt(true, false, false);
             timers.replace(currState, createTimerTask(30*1000, new Object()));
           }
+        case CLOSE_WAIT:
+          if(p.finFlag){
+            sendpkt(true, false, false);
+          }
+          break;
           
           default:
       }
