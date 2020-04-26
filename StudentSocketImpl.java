@@ -192,6 +192,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           timers.replace(currState, createTimerTask(30*1000, new Object()));}
           if(p.ackFlag){
             sendpkt(true, false, false);
+            timers.replace(currState, createTimerTask(30*1000, new Object()));
           }
           System.out.println("5");
           default:
