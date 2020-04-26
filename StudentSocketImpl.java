@@ -137,7 +137,8 @@ class StudentSocketImpl extends BaseSocketImpl {
           if(p.ackFlag){
             changeState(states.ESTABLISHED);
           }
-            else if (p.synFlag){
+          else if (p.finFlag){
+            changeState(states.CLOSE_WAIT);
             sendpkt(true, false, false);
           }
           break;
