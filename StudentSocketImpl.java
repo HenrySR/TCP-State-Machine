@@ -129,13 +129,18 @@ class StudentSocketImpl extends BaseSocketImpl {
           sendpkt(true, true, false);
           break;
         case SYN_SENT:
+
           changeState(states.ESTABLISHED);
           sendpkt(true, false, false);
           break;
         case SYN_RCVD:
           if(p.ackFlag){
             changeState(states.ESTABLISHED);
-          } else if (p.finFlag){
+          } else if (p.synFlag){
+            sendpkt(true, false, false);
+          }
+            else if (p.finFlag){
+            changeState(states.CLOSE_WAIT);
             sendpkt(true, false, false);
           }
           break;
@@ -146,6 +151,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           } else if (p.synFlag && p.ackFlag){
             sendpkt(true, false, false);
           }
+          System.out.print("20");
           break;
         case FIN_WAIT_1:
           if (p.finFlag) {
@@ -251,8 +257,10 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void close() throws IOException {
     if (currState == states.CLOSE_WAIT)
       changeState(states.LAST_ACK);
-    else if (currState != states.CLOSED && address != null)
+    else if (currState == states.ESTABLISHED){
       changeState(states.FIN_WAIT_1);
+      System.out.println("19");
+    }
     else
       return;
     sendpkt(false, false, true);
