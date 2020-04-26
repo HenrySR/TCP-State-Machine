@@ -186,11 +186,7 @@ class StudentSocketImpl extends BaseSocketImpl {
             sendpkt(true, false, false);
             timers.replace(currState, createTimerTask(30*1000, new Object()));
           }
-        case CLOSE_WAIT:
-          if(p.finFlag){
-            sendpkt(true, false, false);
-          }
-          break;
+
           
           default:
       }
