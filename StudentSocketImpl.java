@@ -136,8 +136,6 @@ class StudentSocketImpl extends BaseSocketImpl {
         case SYN_RCVD:
           if(p.ackFlag){
             changeState(states.ESTABLISHED);
-          } else if (p.synFlag){
-            sendpkt(true, false, false);
           }
             else if (p.finFlag){
             changeState(states.CLOSE_WAIT);
@@ -257,7 +255,7 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void close() throws IOException {
     if (currState == states.CLOSE_WAIT)
       changeState(states.LAST_ACK);
-    else if (currState == states.ESTABLISHED){
+    else if (currState != states.CLOSED && address != null){
       changeState(states.FIN_WAIT_1);
       System.out.println("19");
     }
