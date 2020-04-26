@@ -74,7 +74,10 @@ class StudentSocketImpl extends BaseSocketImpl {
       System.out.println("8");
       timers.remove(currState, currTimer); 
     } if (currState == states.CLOSING && FinWaitTimer != null){
-      tcpTimer.cancel();
+      System.out.println("11");
+      FinWaitTimer.cancel();
+      timers.remove(states.FIN_WAIT_1, FinWaitTimer);
+
     }
     System.out.println("!!! " + currState + " -> " + newState);
     currState = newState;
@@ -83,15 +86,17 @@ class StudentSocketImpl extends BaseSocketImpl {
     if (newState == states.CLOSED)
       D.unregisterConnection(address, localport, port, this);
 
-      System.out.println("1");
+      System.out.println("1"); 
   }
 
   private synchronized void sendpkt(boolean ackFlag, boolean synFlag, boolean finFlag) {
     TCPPacket pktToSend;
     if (ackFlag && !synFlag) {
+      System.out.println("a");
       pktToSend = new TCPPacket(localport, port, -2, ackNum, ackFlag, synFlag, finFlag, 50, null);
       TCPWrapper.send(pktToSend, address);
     } else {
+      System.out.println("b");
       pktToSend = new TCPPacket(localport, port, seqNum, ackNum, ackFlag, synFlag, finFlag, 50, null);
       timers.put(currState, createTimerTask(2500, new Object()));
       TCPWrapper.send(pktToSend, address);
@@ -147,7 +152,7 @@ class StudentSocketImpl extends BaseSocketImpl {
           } else if (p.ackFlag && !p.synFlag) {
             changeState(states.FIN_WAIT_2);
           } else if (p.ackFlag && p.synFlag) {
-            sendpkt(false, false, true);
+            sendpkt(true, false, false);
           }
           System.out.println("2");
           break;
